@@ -170,9 +170,12 @@ def _get_task_creators(namespace, command_names):
     # get all functions that are task-creators
     for name, ref in namespace.items():
 
-        # function is a task creator because of its name
-        if ((inspect.isfunction(ref) or inspect.ismethod(ref)) and
-            name.startswith(TASK_STRING)):
+        # any callable with the correct name will do
+        # apart from class definitions (as opposed to objects)
+        #            not isinstance(ref, type) removes classes
+        
+        if callable(ref) and (not isinstance(ref, type)) and name.startswith(TASK_STRING):
+
             # remove TASK_STRING prefix from name
             task_name = name[prefix_len:]
 
@@ -197,7 +200,11 @@ def _get_task_creators(namespace, command_names):
                    " Please choose another name.")
             raise InvalidDodoFile(msg % task_name)
         # get line number where function is defined
-        line = inspect.getsourcelines(ref)[1]
+        try:
+            line = inspect.getsourcelines(ref)[1]
+        except TypeError:
+            # probably not a function,but a callable class
+            line = -1
         # add to list task generator functions
         funcs.append((task_name, ref, line))
 
